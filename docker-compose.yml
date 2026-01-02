@@ -1,0 +1,53 @@
+version: '3.8'
+
+services:
+  traefik:
+    image: traefik:v2.10
+    container_name: traefik
+    command:
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+      - "--certificatesresolvers.letsencrypt.acme.httpchallenge=true"
+      - "--certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web"
+      - "--certificatesresolvers.letsencrypt.acme.email=onsu@chalmers.se"
+      - "--certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json"
+    ports:
+      - "80:80"
+      - "443:443"
+      - "8080:8080"  # Traefik dashboard
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+      - "./letsencrypt:/letsencrypt"
+    restart: unless-stopped
+
+  researchbook:
+    build: .
+    container_name: researchbook
+    environment:
+      - NEO4J_DB1_URI=${NEO4J_DB1_URI}
+      - NEO4J_DB1_USERNAME=${NEO4J_DB1_USERNAME}
+      - NEO4J_DB1_PASSWORD=${NEO4J_DB1_PASSWORD}
+      - NEO4J_DB2_URI=${NEO4J_DB2_URI}
+      - NEO4J_DB2_USERNAME=${NEO4J_DB2_USERNAME}
+      - NEO4J_DB2_PASSWORD=${NEO4J_DB2_PASSWORD}
+      - LIGHTLLM_URL=${LIGHTLLM_URL}
+      - LIGHTLLM_API_KEY=${LIGHTLLM_API_KEY}
+      - LIGHTLLM_MODEL=${LIGHTLLM_MODEL}
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.researchbook.rule=Host(`researchbook.sommarprojekt.chalmers.se`)"
+      - "traefik.http.routers.researchbook.entrypoints=websecure"
+      - "traefik.http.routers.researchbook.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.researchbook.middlewares=chalmers-ipwhitelist"
+      - "traefik.http.services.researchbook.loadbalancer.server.port=8501"
+      # IP whitelist middleware - only allow Chalmers network
+      - "traefik.http.middlewares.chalmers-ipwhitelist.ipwhitelist.sourcerange=129.16.0.0/16"
+      # HTTP to HTTPS redirect
+      - "traefik.http.routers.researchbook-http.rule=Host(`researchbook.sommarprojekt.chalmers.se`)"
+      - "traefik.http.routers.researchbook-http.entrypoints=web"
+      - "traefik.http.routers.researchbook-http.middlewares=redirect-to-https"
+      - "traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https"
+    restart: unless-stopped

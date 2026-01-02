@@ -7,27 +7,32 @@ Using 2 Neo4j databases + LightLLM for research intelligence
 from neo4j import GraphDatabase
 import requests
 import json
+import os
 from datetime import datetime
 from typing import Dict, List, Optional, Any
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 class ResearchBook:
     def __init__(self):
         # Database 1 - Research Intelligence (Chalmers + ORCID)
         self.db1_driver = GraphDatabase.driver(
-            "neo4j+s://84711dd6.databases.neo4j.io",
-            auth=("neo4j", "kvWkwedbwzpifLYyA_lhgUTIVdR-l37Gz1XJHKB7bWI")
+            os.getenv("NEO4J_DB1_URI"),
+            auth=(os.getenv("NEO4J_DB1_USERNAME"), os.getenv("NEO4J_DB1_PASSWORD"))
         )
         
         # Database 2 - Thesis Relationships  
         self.db2_driver = GraphDatabase.driver(
-            "neo4j+s://7ae716c3.databases.neo4j.io",
-            auth=("neo4j", "NmDzl4lSyYJqhAAtJinGbhNgbNFeiQIsH2M6IrfFECM")
+            os.getenv("NEO4J_DB2_URI"),
+            auth=(os.getenv("NEO4J_DB2_USERNAME"), os.getenv("NEO4J_DB2_PASSWORD"))
         )
         
         # LightLLM API
-        self.llm_url = "https://anast.ita.chalmers.se:4000/v1/chat/completions"
-        self.llm_key = "sk-u_7AVwCgIBRZF9IXwzPqtA"
-        self.llm_model = "claude-sonnet-4"
+        self.llm_url = os.getenv("LIGHTLLM_URL")
+        self.llm_key = os.getenv("LIGHTLLM_API_KEY")
+        self.llm_model = os.getenv("LIGHTLLM_MODEL", "claude-sonnet-4")
         
     def ai_query(self, prompt: str, max_tokens: int = 1000) -> str:
         """Send query to LightLLM and get AI response"""

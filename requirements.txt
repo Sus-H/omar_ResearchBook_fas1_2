@@ -6,3 +6,6 @@ neo4j
 requests
 python-dateutil
 pyvis
+python-dotenv
+flask
+gunicorn
