@@ -1,7 +1,7 @@
 services:
   researchbook:
     build: .
-    container_name: traefik-research-book
+    container_name: researchbook
     environment:
       - NEO4J_DB1_URI=${NEO4J_DB1_URI}
       - NEO4J_DB1_USERNAME=${NEO4J_DB1_USERNAME}
