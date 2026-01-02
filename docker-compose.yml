@@ -1,31 +1,7 @@
-version: '3.8'
-
 services:
-  traefik:
-    image: traefik:v2.10
-    container_name: traefik
-    command:
-      - "--api.insecure=true"
-      - "--providers.docker=true"
-      - "--providers.docker.exposedbydefault=false"
-      - "--entrypoints.web.address=:80"
-      - "--entrypoints.websecure.address=:443"
-      - "--certificatesresolvers.letsencrypt.acme.httpchallenge=true"
-      - "--certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web"
-      - "--certificatesresolvers.letsencrypt.acme.email=onsu@chalmers.se"
-      - "--certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json"
-    ports:
-      - "80:80"
-      - "443:443"
-      - "8080:8080"  # Traefik dashboard
-    volumes:
-      - "/var/run/docker.sock:/var/run/docker.sock:ro"
-      - "./letsencrypt:/letsencrypt"
-    restart: unless-stopped
-
   researchbook:
     build: .
-    container_name: researchbook
+    container_name: traefik-research-book
     environment:
       - NEO4J_DB1_URI=${NEO4J_DB1_URI}
       - NEO4J_DB1_USERNAME=${NEO4J_DB1_USERNAME}
@@ -36,6 +12,8 @@ services:
       - LIGHTLLM_URL=${LIGHTLLM_URL}
       - LIGHTLLM_API_KEY=${LIGHTLLM_API_KEY}
       - LIGHTLLM_MODEL=${LIGHTLLM_MODEL}
+    networks:
+      - traefik
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.researchbook.rule=Host(`researchbook.sommarprojekt.chalmers.se`)"
@@ -51,3 +29,7 @@ services:
       - "traefik.http.routers.researchbook-http.middlewares=redirect-to-https"
       - "traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https"
     restart: unless-stopped
+
+networks:
+  traefik:
+    external: true
